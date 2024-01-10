@@ -1,0 +1,188 @@
+#!/bin/bash
+
+# internsctl - Custom Linux Command for Interns
+# Version: v0.1.0
+
+show_manual() {
+    cat <<EOF
+internsctl(1)                                  User Commands                                 internsctl(1)
+
+NAME
+    internsctl - Custom Linux Command for Interns
+
+SYNOPSIS
+    internsctl [OPTION]
+
+DESCRIPTION
+    internsctl is a custom Linux command designed for interns to perform various operations.
+
+OPTIONS
+    --help      Display this help and exit.
+    --version   Output the version of internsctl.
+
+EXAMPLES
+    internsctl --help
+    internsctl --version
+
+AUTHOR
+    Kishan Kant Sharma
+
+REPORTING BUGS
+    Please report any bugs to <chintz.7861agchez@gmail.com>.
+
+COPYRIGHT
+    This is free software: you are free to change and redistribute it.
+    There is NO WARRANTY, to the extent permitted by law.
+
+EOF
+}
+
+# Function to display help information
+show_help() {
+    cat <<EOF
+Usage: internsctl [OPTION]
+
+Custom Linux Command for Interns
+
+Options:
+    --help      Display this help and exit.
+    --version   Output the version of internsctl.
+
+Examples:
+    internsctl --help
+    internsctl --version
+EOF
+}
+
+# Function to display version information
+show_version() {
+    echo "internsctl v0.1.0"
+}
+
+# Function to show cpu info
+cpu_info(){
+    lscpu
+}
+
+memory_info(){
+    free
+}
+
+
+
+
+# Main script
+case "$1" in
+    --help)
+        show_help
+        ;;
+    --version)
+        show_version
+        ;;
+    cpu)
+        cpu_info
+        ;;
+    memory)
+        memory_info
+        ;;
+
+    user)
+        if [ "$2" = "create" ]; then
+            username=$3
+
+            # Check if the user already exists
+            if id "$username" &>/dev/null; then
+                echo "User '$username' already exists."
+                exit 1
+            fi
+
+            # Create the user with a home directory
+            sudo useradd -m -s /bin/bash "$username"
+
+            # Set password for the newly created user
+            passwd "$username"
+
+            echo "User '$username' has been created with a home directory."
+
+        elif [ "$2" == "list" ]; then
+                getent passwd | grep -E '/bin/(bash|sh)$' | cut -d: -f1
+
+        elif [ [ "$2" == "list" ] && [ "$3" == "--sudo-only" ] ]; then
+            grep -E '^(sudo|wheel)[[:space:]]:[[:space:]][^:]+(,|$)' /etc/group | cut -d: -f4 | tr ',' '\n'
+
+
+        fi
+
+        ;;
+file)
+    file_name="${@: -1}" # Last argument is the file name
+    options="$3" # Options are between the 3rd argument and before the last argument
+
+    # Check if the file exists
+    if [ ! -f "$file_name" ]; then
+        echo "File '$file_name' does not exist or is not a regular file."
+        exit 1
+    fi
+
+    # Initialize boolean variables
+    print_size=false
+    print_permissions=false
+    print_owner=false
+    print_last_modified=false
+
+    # Set boolean variables based on options
+    case "$options" in
+        "--size")
+            print_size=true
+            ;;
+        "--permissions")
+            print_permissions=true
+            ;;
+        "--owner")
+            print_owner=true
+            ;;
+        "--last-modified")
+            print_last_modified=true
+            ;;
+        *)
+            echo "Invalid option: $options"
+            exit 1
+            ;;
+    esac
+
+    # Print requested information
+    if $print_size; then
+        stat -c %s "$file_name"
+    fi
+
+    if $print_permissions; then
+        ls -l "$file_name" | awk '{print $1}'
+    fi
+
+    if $print_owner; then
+        stat -c %U "$file_name"
+    fi
+
+    if $print_last_modified; then
+        stat -c %y "$file_name"
+    fi
+
+    # Check if no options were selected
+    if [ "$print_size" = false ] && [ "$print_permissions" = false ] && [ "$print_owner" = false ] && [ "$print_last_modified" = false ]; then
+        echo "No options selected."
+    fi
+    ;;
+
+
+    man)
+        show_manual
+        ;;
+    *)
+        show_manual
+        ;;
+esac
+
+
+
+
+exit 0
